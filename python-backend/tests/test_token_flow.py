@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-
+from interfaces import auth_routes
 import main
 from infrastructure.jwt_service import (
     create_refresh_token,
@@ -55,15 +55,63 @@ def test_refresh_rotation_and_logout(monkeypatch):
     fake_tokens = FakeRefreshTokenRepository()
 
     monkeypatch.setattr(
-        main,
+        auth_routes,
         "PostgresRefreshTokenRepository",
         lambda: fake_tokens,
     )
+
+    monkeypatch.setattr(
+        auth_routes,
+        "PostgresUserRepository",
+        FakeUserRepository,
+    )
+
+    old_token = create_refresh_token(1)
+    fake_tokens.save_token(
+        user_id=1,
+        token=old_token,
+        expires_at=None,
+    )
+
+    # Refresh: old token -> new token
+    response = client.post(
+        "/users/refresh-token",
+        json={"refresh_token": old_token},
+    )
+
+    assert response.status_code == 200
+
+    new_token = response.json()["refresh_token"]
+    assert new_token != old_token
+
+    # Old token must no longer work
+    reused = client.post(
+        "/users/refresh-token",
+        json={"refresh_token": old_token},
+    )
+
+    assert reused.status_code == 401
+
+    # Logout revokes the new refresh token
+    logout = client.post(
+        "/users/logout",
+        json={"refresh_token": new_token},
+    )
+
+    assert logout.status_code == 200
+
+    # Revoked token must no longer work
+    revoked = client.post(
+        "/users/refresh-token",
+        json={"refresh_token": new_token},
+    )
+
+    assert revoked.status_code == 401
 def test_logout_invalid_token(monkeypatch):
     fake_tokens = FakeRefreshTokenRepository()
 
     monkeypatch.setattr(
-        main,
+        auth_routes,
         "PostgresRefreshTokenRepository",
         lambda: fake_tokens,
     )

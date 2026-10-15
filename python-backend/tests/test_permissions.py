@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 import main
+from interfaces import auth_routes, crud_routes
 
 
 client = TestClient(main.app)
@@ -37,12 +38,12 @@ class FakeCRUDRepository:
 
 def test_regular_user_sees_only_self(monkeypatch):
     monkeypatch.setattr(
-        main,
+        crud_routes,
         "PostgresPermissionRepository",
         lambda: FakePermissionRepository(is_admin=False),
     )
 
-    main.app.dependency_overrides[main.get_current_user] = lambda: FAKE_USER
+    main.app.dependency_overrides[auth_routes.get_current_user] = lambda: FAKE_USER
 
     try:
         response = client.get("/crud/users")
@@ -55,18 +56,18 @@ def test_regular_user_sees_only_self(monkeypatch):
 
 def test_admin_can_list_users(monkeypatch):
     monkeypatch.setattr(
-        main,
+        crud_routes,
         "PostgresPermissionRepository",
         lambda: FakePermissionRepository(is_admin=True),
     )
 
     monkeypatch.setattr(
-        main,
+        crud_routes,
         "PostgresUserCRUDRepository",
         FakeCRUDRepository,
     )
 
-    main.app.dependency_overrides[main.get_current_user] = lambda: FAKE_USER
+    main.app.dependency_overrides[auth_routes.get_current_user] = lambda: FAKE_USER
 
     try:
         response = client.get("/crud/users")
@@ -79,12 +80,12 @@ def test_admin_can_list_users(monkeypatch):
 
 def test_invalid_pagination(monkeypatch):
     monkeypatch.setattr(
-        main,
+        crud_routes,
         "PostgresPermissionRepository",
         lambda: FakePermissionRepository(),
     )
 
-    main.app.dependency_overrides[main.get_current_user] = lambda: FAKE_USER
+    main.app.dependency_overrides[auth_routes.get_current_user] = lambda: FAKE_USER
 
     try:
         response = client.get("/crud/users?page=0")

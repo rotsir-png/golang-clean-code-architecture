@@ -102,3 +102,30 @@ def test_login_user_wrong_password():
             repository=repository,
             verify_password=verify_password
         )
+def test_duplicate_email_returns_conflict(monkeypatch):
+    from fastapi.testclient import TestClient
+    from interfaces import auth_routes
+    import main
+
+    class DuplicateEmailRepository:
+        def create_user(self, email, first_name, last_name, password_hash):
+            raise ValueError("Email already registered")
+
+    monkeypatch.setattr(
+        auth_routes,
+        "PostgresUserRepository",
+        DuplicateEmailRepository
+    )
+
+    response = TestClient(main.app).post(
+        "/users/register",
+        json={
+            "email": "test@example.com",
+            "first_name": "Test",
+            "last_name": "User",
+            "password": "Test1234"
+        }
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Email already registered"

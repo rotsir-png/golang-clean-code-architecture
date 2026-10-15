@@ -1,3 +1,4 @@
+from psycopg.errors import UniqueViolation
 from infrastructure.database import get_connection
 
 
@@ -11,31 +12,34 @@ class PostgresUserRepository:
         password_hash: str
     ) -> int:
 
-        with get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    INSERT INTO users (
-                        email,
-                        first_name,
-                        last_name,
-                        password_hash
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        INSERT INTO users (
+                            email,
+                            first_name,
+                            last_name,
+                            password_hash
+                        )
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id
+                        """,
+                        (
+                            email,
+                            first_name,
+                            last_name,
+                            password_hash
+                        )
                     )
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id
-                    """,
-                    (
-                        email,
-                        first_name,
-                        last_name,
-                        password_hash
-                    )
-                )
 
-                user_id = cursor.fetchone()[0]
+                    user_id = cursor.fetchone()[0]
 
-        return user_id
+            return user_id
 
+        except UniqueViolation as error:
+            raise ValueError("Email already registered") from error
     def get_user_by_email(self, email: str) -> dict | None:
 
         with get_connection() as conn:
@@ -62,7 +66,6 @@ class PostgresUserRepository:
                     "last_name": row[3],
                     "password_hash": row[4]
                 }
-
     def get_user_by_id(self, user_id: int) -> dict | None:
 
         with get_connection() as conn:
