@@ -1,4 +1,14 @@
+# Python Clean Architecture Rewrite — Khaojai Assignment
 
+This repository is a fork of the original Go Clean Architecture project.
+
+My Python FastAPI implementation is available in the
+[python-backend folder](./python-backend/).
+
+Please see the [Python Backend README](./python-backend/README.md)
+for installation, architecture explanation, testing, and limitations.
+
+---
 # Python FastAPI Backend
 
 A Python implementation inspired by the Go Clean Architecture repository.
