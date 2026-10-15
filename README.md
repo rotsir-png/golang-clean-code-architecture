@@ -1,3 +1,15 @@
+# Python Clean Architecture Rewrite — Khaojai Assignment
+
+This repository is a fork of the original Go Clean Architecture project.
+
+The Python FastAPI implementation is available in the
+[python-backend folder](./python-backend/).
+
+Please see the [Python Backend README](./python-backend/README.md)
+for installation instructions, architecture explanation,
+tests, and implementation limitations.
+
+---
 ## Golang Clean Code Architecture Template
 
 Go (Golang) Clean Architecture based on Reading Uncle Bob's Clean Architecture. This code using GoFiber, GORM and User registerm authentication feature.
